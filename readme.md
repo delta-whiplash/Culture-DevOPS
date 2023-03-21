@@ -126,6 +126,7 @@ git push origin main
 ## Configuration de GitHub Actions
 
 1. Créez un fichier .github/workflows/ci-cd.yml avec le contenu suivant :
+Ce fichier contient deux jobs : un job de test et un job de construction et de déploiement de l'image Docker. Le job de test est exécuté à chaque push sur la branche main. Le job de construction et de déploiement est exécuté après le job de test et utilise l'image Docker construite par le job de test.
 
 ```yaml
 name: CI/CD Pipeline
@@ -135,6 +136,7 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    needs: test
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -178,6 +180,23 @@ jobs:
         run: |
           docker tag flask-hello-world ${{ secrets.DOCKER_USERNAME }}/flask-hello-world:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/flask-hello-world:latest
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+      - name: Run tests
+        run: pytest
+
 ```
 
 ## Déploiement
@@ -192,6 +211,7 @@ docker run -d -p 5000:5000 --name flask-hello-world $DOCKER_USERNAME/flask-hello
 
 
 2. Pour déployer l'application sur un cluster Kubernetes, créez un fichier deployment.yaml et ajustez les valeurs en fonction de votre configuration :
+a. Remplacez `$DOCKER_USERNAME` par votre nom d'utilisateur Docker.
 
 ```yaml
 apiVersion: apps/v1
